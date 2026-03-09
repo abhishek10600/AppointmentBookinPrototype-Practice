@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BusinessRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum LocationType {
+  ONLINE
+  OFFLINE
+}
+
+model User {
+  id           String          @id @default(cuid())
+  email        String          @unique
+  passwordHash String?
+  name         String?
+  avatarUrl    String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  ownedBusinesses   Business[]       @relation("OwnerBusinesses")
+  memberships       BusinessMember[]
+}
+
+model Business {
+  id              String            @id @default(cuid())
+  ownerId         String
+  name            String
+  slug            String            @unique
+  description     String?
+  locationAddress String?
+  timezone        String
+  logoUrl         String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  owner       User            @relation("OwnerBusinesses", fields: [ownerId], references: [id])
+  members     BusinessMember[]
+  services    Service[]
+  customers   Customer[]
+  bookings    Booking[]
+  availability AvailabilityRule[]
+  googleIntegration GoogleIntegration?
+}
+
+model BusinessMember {
+  id         String       @id @default(cuid())
+  userId     String
+  businessId String
+  role       BusinessRole
+
+  user     User     @relation(fields: [userId], references: [id])
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@unique([userId, businessId])
+}
+
+model Service {
+  id              String           @id @default(cuid())
+  businessId      String
+  name            String
+  description     String?
+  durationMinutes Int
+  isOnline        Boolean          @default(true)
+  priceCents      Int?
+  currency        String?          @default("USD")
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  business    Business         @relation(fields: [businessId], references: [id])
+  bookings    Booking[]
+  availability AvailabilityRule[]
+
+  @@index([businessId])
+}
+
+model AvailabilityRule {
+  id          String   @id @default(cuid())
+  businessId  String
+  serviceId   String?
+  dayOfWeek   Int      // 0 (Sunday) - 6 (Saturday)
+  startTime   String   // "09:00" in business timezone
+  endTime     String   // "17:00"
+  bufferMinutes Int    @default(0)
+  maxPerSlot  Int      @default(1)
+  isActive    Boolean  @default(true)
+
+  business Business @relation(fields: [businessId], references: [id])
+  service  Service? @relation(fields: [serviceId], references: [id])
+
+  @@index([businessId])
+  @@index([serviceId])
+}
+
+model Customer {
+  id         String    @id @default(cuid())
+  businessId String
+  name       String
+  email      String
+  phone      String?
+  createdAt  DateTime  @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id])
+  bookings Booking[]
+
+  @@index([businessId])
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  businessId    String
+  serviceId     String
+  customerId    String
+  startDateTime DateTime
+  endDateTime   DateTime
+  status        BookingStatus @default(PENDING)
+  locationType  LocationType
+  meetingLink   String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+  service  Service  @relation(fields: [serviceId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([businessId])
+  @@index([serviceId])
+  @@index([startDateTime])
+}
+
+model GoogleIntegration {
+  id           String   @id @default(cuid())
+  businessId   String   @unique
+  googleUserId String
+  accessToken  String
+  refreshToken String
+  expiryDate   DateTime
+  calendarId   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+}
