@@ -1,8 +1,8 @@
-backend/.env*
+backend/.env
 backend/dist
 backend/node_modules
 backend/src/generated/prisma
 
 
-frontend/.env*
+frontend/.env
 frontend/node_modules
