@@ -13,10 +13,10 @@ type Env = {
   CLOUDINARY_CLOUD_NAME: string;
   CLOUDINARY_API_KEY: string;
   CLOUDINARY_API_SECRET: string;
-  SMTP_HOST: string;
-  SMTP_PORT: number;
-  SMTP_USER: string;
-  SMTP_PASS: string;
+  SMTP_HOST: string | undefined;
+  SMTP_PORT: number | undefined;
+  SMTP_USER: string | undefined;
+  SMTP_PASS: string | undefined;
   APP_BASE_URL: string;
 };
 
@@ -72,10 +72,10 @@ function getEnv(): Env {
       CLOUDINARY_API_SECRET,
       "CLOUDINARY_API_SECRET",
     ),
-    SMTP_HOST: requireEnv(SMTP_HOST, "SMTP_HOST"),
-    SMTP_PORT: Number(requireEnv(SMTP_PORT, "SMTP_PORT")),
-    SMTP_USER: requireEnv(SMTP_USER, "SMTP_USER"),
-    SMTP_PASS: requireEnv(SMTP_PASS, "SMTP_PASS"),
+    SMTP_HOST,
+    SMTP_PORT: SMTP_PORT ? Number(SMTP_PORT) : undefined,
+    SMTP_USER,
+    SMTP_PASS,
     APP_BASE_URL: requireEnv(APP_BASE_URL, "APP_BASE_URL"),
   };
 }

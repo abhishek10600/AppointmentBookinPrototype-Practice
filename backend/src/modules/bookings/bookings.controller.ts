@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { prisma } from "../../db/prisma.js";
 import { getAvailableSlotsForService } from "../availability/availability.service.js";
+import { createGoogleCalendarEventForBooking } from "../../integrations/googleClient.js";
 
 export const publicBookingSchema = z.object({
   customerName: z.string().min(1),
@@ -141,6 +142,12 @@ export async function createPublicBooking(
         service: true,
       },
     });
+
+    if (booking.locationType === "ONLINE") {
+      // Fire-and-forget; errors are handled by global error handler if awaited,
+      // so we intentionally do not await to keep response fast.
+      void createGoogleCalendarEventForBooking(booking.id);
+    }
 
     return res.status(201).json(booking);
   } catch (error) {
